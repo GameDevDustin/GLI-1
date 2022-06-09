@@ -20,7 +20,11 @@ public class PlayerInput : MonoBehaviour
             if (Physics.Raycast(rayOrigin, out rayHit))
             {
                 Transform goHit = rayHit.transform;
-                ChangeGOColor(goHit.gameObject);
+                Debug.Log("goHit name: " + goHit.gameObject.GetComponent<MeshFilter>().mesh.name.ToLower());
+                if (goHit.transform.GetComponent<MeshFilter>().mesh.name.ToLower().StartsWith("cube"))
+                {
+                    ChangeGOColor(goHit.gameObject);
+                }
             }
         }
     }

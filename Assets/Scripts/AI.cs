@@ -1,13 +1,22 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.InputSystem;
+using UnityEngine.PlayerLoop;
+using Debug = UnityEngine.Debug;
 using Random = UnityEngine.Random;
 
 public class AI : MonoBehaviour
 {
+    private enum AIState
+    {
+        Walking, Jumping, Attack, Death
+    }
+
     private Vector3 _destination;
     private NavMeshAgent _navMeshAgent;
     [SerializeField] GameObject _waypointsParentGO;
@@ -18,6 +27,7 @@ public class AI : MonoBehaviour
     private Vector3 _currentWPPosition;
     private int _currentWP;
     private int _lastWP;
+    [SerializeField] private AIState _currentAIState;
     
     
     // Start is called before the first frame update
@@ -47,21 +57,45 @@ public class AI : MonoBehaviour
 
     private void Update()
     {
+        CheckInput();
+
+        if (!_navMeshAgent.isStopped)
+        { WalkingOnPath(); }
+
+        //PrintAIState();
+    }
+
+    private void CheckInput()
+    {
+        if (Keyboard.current.eKey.wasPressedThisFrame)
+        {
+            _currentAIState = AIState.Jumping;
+            if (_navMeshAgent.remainingDistance < 0.5f)
+            {
+                StartCoroutine(AttackingState());
+            }
+        }
+    }
+
+    private IEnumerator AttackingState()
+    {
+        Debug.Log("Performing the attack!");
+        _currentAIState = AIState.Attack;
+        _navMeshAgent.isStopped = true;
+        yield return new WaitForSeconds(3f);
+        _navMeshAgent.isStopped = false;
+        _currentAIState = AIState.Walking;
+    }
+
+    private void WalkingOnPath()
+    {
         if (_navMeshAgent.remainingDistance > 0.1f)
-        {
-            return;
-        }
+        { return; }
         else
-        {
-            _reachedCurrentWP = true;
-            UpdateCurrentWP();
-        }
+        { _reachedCurrentWP = true; UpdateCurrentWP(); }
         
         if (!_reachedLastWP && _reachedCurrentWP)
-        {
-            MoveToNextWaypoint();
-            _reachedCurrentWP = false;
-        }
+        { MoveToNextWaypoint(); _reachedCurrentWP = false; }
     }
 
     private void UpdateCurrentWP()
@@ -92,5 +126,10 @@ public class AI : MonoBehaviour
     {
         int rand = Random.Range(1, _numOfWaypoints);
         _destination = _waypointGOs[rand].transform.position;
+    }
+
+    private void PrintAIState()
+    {
+        Debug.Log(_currentAIState);
     }
 }
